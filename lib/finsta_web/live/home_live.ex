@@ -18,10 +18,14 @@ defmodule FinstaWeb.HomeLive do
 
     <div id="feed" phx-update="stream" class="flex flex-col gap-2">
       <div :for={{dom_id, post} <- @streams.posts} id={dom_id} class="w-1/2 mx-auto flex flex-col gap-2 p-4 border rounded">
-
-        <img src={post.image_path} />
-        <p><%= post.user.email %></p>
-        <p><%= post.caption %></p>
+        <div class="text-sm text-gray-500">
+          <p><%= Timex.format!(post.inserted_at, "{Mfull} {D}, {YYYY} at {h12}:{m} {AM}") %></p>
+          <p><%= if post.location, do: "at: #{post.location}" %></p>
+          <p><%= if post.tags, do: "with: #{Enum.join(post.tags, ", ")}" %></p>
+        </div>
+        <img src={post.image_path} class="mb-2" />
+        <p class="font-bold"><%= post.user.email %></p>
+        <p class="mb-2"><%= post.caption %></p>
       </div>
     </div>
 
@@ -29,12 +33,14 @@ defmodule FinstaWeb.HomeLive do
       <.simple_form for={@form} phx-change="validate" phx-submit="save-post">
         <.live_file_input upload={@uploads.image} required />
         <.input field={@form[:caption]} type="textarea" label="Caption" required />
-
+        <.input field={@form[:location]} type="text" label="Location" />
+        <.input field={@form[:tags]} type="text" label="Tags" placeholder="Comma separated tags" />
         <.button type="submit" phx-disable-with="Saving ...">Create Post</.button>
       </.simple_form>
     </.modal>
     """
   end
+
 
   @impl true
   def mount(_params, _session, socket) do
@@ -49,10 +55,10 @@ defmodule FinstaWeb.HomeLive do
       socket =
         socket
         |> assign(form: form, loading: false)
-        |> allow_upload(:image, accept: ~w(.png .jpg), max_entries: 1)
+        |> allow_upload(:image, accept: ~w(.png .jpg .jpeg), max_entries: 1)
         |> stream(:posts, Posts.list_posts())
 
-    {:ok, socket}
+      {:ok, socket}
     else
       {:ok, assign(socket, loading: true)}
     end
@@ -66,16 +72,21 @@ defmodule FinstaWeb.HomeLive do
   def handle_event("save-post", %{"post" => post_params}, socket) do
     %{current_user: user} = socket.assigns
 
+    post_params = Map.update!(post_params, "tags", fn tags ->
+      String.split(tags, ",")
+      |> Enum.map(&String.trim/1)
+    end)
+
     post_params
     |> Map.put("user_id", user.id)
     |> Map.put("image_path", List.first(consume_files(socket)))
     |> Posts.save()
     |> case do
       {:ok, post} ->
-          socket =
-            socket
-            |> put_flash(:info, "Post created successfully!")
-            |> push_navigate(to: ~p"/home")
+        socket =
+          socket
+          |> put_flash(:info, "Post created successfully!")
+          |> push_navigate(to: ~p"/home")
 
         Phoenix.PubSub.broadcast(Finsta.PubSub, "posts", {:new, Map.put(post, :user, user)})
 
