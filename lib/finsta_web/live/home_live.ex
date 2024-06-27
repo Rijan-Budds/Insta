@@ -26,6 +26,8 @@ defmodule FinstaWeb.HomeLive do
         <img src={post.image_path} class="mb-2" />
         <p class="font-bold"><%= post.user.email %></p>
         <p class="mb-2"><%= post.caption %></p>
+        <p>Thumbs up: <%= post.thumbs_up_count %></p>
+        <button phx-click="thumbs_up" phx-value-id={post.id}>👍</button>
       </div>
     </div>
 
@@ -40,7 +42,6 @@ defmodule FinstaWeb.HomeLive do
     </.modal>
     """
   end
-
 
   @impl true
   def mount(_params, _session, socket) do
@@ -96,6 +97,19 @@ defmodule FinstaWeb.HomeLive do
         {:noreply, socket}
     end
   end
+
+  def handle_event("thumbs_up", %{"id" => id}, socket) do
+    post = Posts.get_post!(id)
+    {:ok, updated_post} = Posts.increment_thumbs_up(post)
+
+    socket =
+      socket
+      |> put_flash(:info, "Post liked!")
+      |> stream_insert(:posts, updated_post, at: fn posts -> Enum.find_index(posts, &(&1.id == updated_post.id)) end)
+
+    {:noreply, socket}
+  end
+
 
   @impl true
   def handle_info({:new, post}, socket) do
