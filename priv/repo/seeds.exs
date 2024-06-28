@@ -1,11 +1,15 @@
-# Script for populating the database. You can run it as:
-#
-#     mix run priv/repo/seeds.exs
-#
-# Inside the script, you can read and write to any of your
-# repositories directly:
-#
-#     Finsta.Repo.insert!(%Finsta.SomeSchema{})
-#
-# We recommend using the bang functions (`insert!`, `update!`
-# and so on) as they will fail if something goes wrong.
+alias Finsta.Repo
+alias Finsta.Accounts
+
+# Define your default user attributes
+default_user_attrs = %{
+  email: "rijanshakya123@gmail.com",
+  password: "Rijan/1234",
+  password_confirmation: "Rijan/1234"
+}
+
+# Create the default user
+case Accounts.create_user(default_user_attrs) do
+  {:ok, user} -> IO.puts("Default user created: #{user.email}")
+  {:error, changeset} -> IO.inspect(changeset.errors)
+end
