@@ -8,6 +8,9 @@ defmodule Finsta.Accounts.User do
     field :hashed_password, :string, redact: true
     field :confirmed_at, :naive_datetime
 
+    has_many :posts, Finsta.Posts.Post
+    has_many :comments, Finsta.Posts.Comment
+
     timestamps()
   end
 

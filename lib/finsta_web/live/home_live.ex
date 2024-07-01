@@ -3,6 +3,8 @@ defmodule FinstaWeb.HomeLive do
 
   alias Finsta.Posts
   alias Finsta.Posts.Post
+  alias Finsta.Posts.Comment
+  alias Finsta.Accounts
 
   @impl true
   def render(%{loading: true} = assigns) do
@@ -28,6 +30,21 @@ defmodule FinstaWeb.HomeLive do
         <p class="mb-2"><%= post.caption %></p>
         <p>Thumbs up: <%= post.thumbs_up_count %></p>
         <button phx-click="thumbs_up" phx-value-id={post.id}>👍</button>
+
+        <!-- Comments Section -->
+        <div>
+          <h2 class="text-xl">Comments</h2>
+          <ul>
+            <li :for={comment <- @comments[post.id] || []}>
+              <p><%= comment.body %> - <%= Accounts.get_user!(comment.user_id).email %></p>
+            </li>
+          </ul>
+          <.simple_form for={@comment_form} phx-change="validate_comment" phx-submit="add-comment">
+            <.input field={@comment_form[:body]} type="text" label="Add a comment" required />
+            <.input field={@comment_form[:post_id]} type="hidden" value={post.id} />
+            <.button type="submit">Comment</.button>
+          </.simple_form>
+        </div>
       </div>
     </div>
 
@@ -53,9 +70,14 @@ defmodule FinstaWeb.HomeLive do
         |> Post.changeset(%{})
         |> to_form(as: "post")
 
+      comment_form =
+        %Comment{}
+        |> Comment.changeset(%{})
+        |> to_form(as: "comment")
+
       socket =
         socket
-        |> assign(form: form, loading: false)
+        |> assign(form: form, loading: false, comment_form: comment_form, comments: %{})
         |> allow_upload(:image, accept: ~w(.png .jpg .jpeg), max_entries: 1)
         |> stream(:posts, Posts.list_posts())
 
@@ -110,6 +132,35 @@ defmodule FinstaWeb.HomeLive do
     {:noreply, socket}
   end
 
+  def handle_event("validate_comment", %{"comment" => comment_params}, socket) do
+    changeset =
+      %Comment{}
+      |> Comment.changeset(comment_params)
+
+    {:noreply, assign(socket, comment_form: to_form(changeset, as: "comment"))}
+  end
+
+  def handle_event("add-comment", %{"comment" => comment_params}, socket) do
+    %{current_user: user} = socket.assigns
+
+    comment_params = Map.put(comment_params, "user_id", user.id)
+
+    case Posts.create_comment(comment_params) do
+      {:ok, comment} ->
+        post_id = comment.post_id
+        comments = Map.update(socket.assigns.comments, post_id, [comment], fn comments -> [comment | comments] end)
+
+        socket =
+          socket
+          |> assign(comments: comments)
+          |> put_flash(:info, "Comment added successfully!")
+
+        {:noreply, socket}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, comment_form: to_form(changeset, as: "comment"))}
+    end
+  end
 
   @impl true
   def handle_info({:new, post}, socket) do

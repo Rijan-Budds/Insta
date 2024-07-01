@@ -1,17 +1,17 @@
 defmodule Finsta.Posts do
   import Ecto.Query, warn: false
-
   alias Finsta.Repo
-  alias Finsta.Posts.Post
+
+  alias Finsta.Posts.{Post, Comment}
 
   def list_posts do
-    query =
-      from p in Post,
-      select: p,
-      order_by: [desc: :inserted_at],
-      preload: [:user]
+    Repo.all(Post)
+    |> Repo.preload([:user])
+  end
 
-    Repo.all(query)
+  def get_post!(id) do
+    Repo.get!(Post, id)
+    |> Repo.preload([:user])
   end
 
   def save(post_params) do
@@ -20,11 +20,18 @@ defmodule Finsta.Posts do
     |> Repo.insert()
   end
 
-  def get_post!(id), do: Repo.get!(Post, id)
+  def increment_thumbs_up(%Post{id: id} = post) do
+    from(p in Post, where: p.id == ^id, update: [inc: [thumbs_up_count: 1]])
+    |> Repo.update_all([])
+    |> case do
+      {1, _} -> {:ok, Repo.get!(Post, id)}
+      _ -> {:error, post}
+    end
+  end
 
-  def increment_thumbs_up(%Post{} = post) do
-    post
-    |> Ecto.Changeset.change(thumbs_up_count: post.thumbs_up_count + 1)
-    |> Repo.update()
+  def create_comment(attrs \\ %{}) do
+    %Comment{}
+    |> Comment.changeset(attrs)
+    |> Repo.insert()
   end
 end
