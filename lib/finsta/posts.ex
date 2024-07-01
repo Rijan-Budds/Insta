@@ -1,7 +1,6 @@
 defmodule Finsta.Posts do
   import Ecto.Query, warn: false
   alias Finsta.Repo
-
   alias Finsta.Posts.{Post, Comment}
 
   def list_posts do
@@ -33,5 +32,11 @@ defmodule Finsta.Posts do
     %Comment{}
     |> Comment.changeset(attrs)
     |> Repo.insert()
+  end
+
+  def list_comments_for_post(post_id) do
+    Comment
+    |> where([c], c.post_id == ^post_id)
+    |> Repo.all()
   end
 end

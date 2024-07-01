@@ -35,8 +35,8 @@ defmodule FinstaWeb.HomeLive do
         <div>
           <h2 class="text-xl">Comments</h2>
           <ul>
-            <li :for={comment <- @comments[post.id] || []}>
-              <p><%= comment.body %> - <%= Accounts.get_user!(comment.user_id).email %></p>
+            <li :for={comment <- @comments[post.id] || []} class="mb-2">
+              <p><%= comment.body %> - <span class="text-sm text-gray-500"><%= Accounts.get_user!(comment.user_id).email %></span></p>
             </li>
           </ul>
           <.simple_form for={@comment_form} phx-change="validate_comment" phx-submit="add-comment">
@@ -60,6 +60,7 @@ defmodule FinstaWeb.HomeLive do
     """
   end
 
+
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
@@ -75,11 +76,17 @@ defmodule FinstaWeb.HomeLive do
         |> Comment.changeset(%{})
         |> to_form(as: "comment")
 
+      posts = Posts.list_posts()
+      comments =
+        Enum.reduce(posts, %{}, fn post, acc ->
+          Map.put(acc, post.id, Posts.list_comments_for_post(post.id))
+        end)
+
       socket =
         socket
-        |> assign(form: form, loading: false, comment_form: comment_form, comments: %{})
+        |> assign(form: form, loading: false, comment_form: comment_form, comments: comments)
         |> allow_upload(:image, accept: ~w(.png .jpg .jpeg), max_entries: 1)
-        |> stream(:posts, Posts.list_posts())
+        |> stream(:posts, posts)
 
       {:ok, socket}
     else
