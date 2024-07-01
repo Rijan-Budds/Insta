@@ -1,4 +1,3 @@
-alias Finsta.Repo
 alias Finsta.Accounts
 
 # Define your default user attributes
