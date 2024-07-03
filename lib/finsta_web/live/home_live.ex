@@ -34,11 +34,11 @@ defmodule FinstaWeb.HomeLive do
         <!-- Comments Section -->
         <div>
           <h2 class="text-xl">Comments</h2>
-          <ul>
-            <li :for={comment <- @comments[post.id] || []} class="mb-2">
+          <div id={"comments-#{post.id}"} phx-update="stream">
+            <div :for={{comment_dom_id, comment} <- @streams.comments} id={comment_dom_id} class="mb-2">
               <p><%= comment.body %> - <span class="text-sm text-gray-500"><%= Accounts.get_user!(comment.user_id).email %></span></p>
-            </li>
-          </ul>
+            </div>
+          </div>
           <.simple_form for={@comment_form} phx-change="validate_comment" phx-submit="add-comment">
             <.input field={@comment_form[:body]} type="text" label="Add a comment" required />
             <.input field={@comment_form[:post_id]} type="hidden" value={post.id} />
@@ -60,7 +60,6 @@ defmodule FinstaWeb.HomeLive do
     """
   end
 
-
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
@@ -77,16 +76,14 @@ defmodule FinstaWeb.HomeLive do
         |> to_form(as: "comment")
 
       posts = Posts.list_posts()
-      comments =
-        Enum.reduce(posts, %{}, fn post, acc ->
-          Map.put(acc, post.id, Posts.list_comments_for_post(post.id))
-        end)
+      comments = Posts.list_comments()
 
       socket =
         socket
-        |> assign(form: form, loading: false, comment_form: comment_form, comments: comments)
+        |> assign(form: form, loading: false, comment_form: comment_form)
         |> allow_upload(:image, accept: ~w(.png .jpg .jpeg), max_entries: 1)
         |> stream(:posts, posts)
+        |> stream(:comments, comments)
 
       {:ok, socket}
     else
@@ -154,12 +151,9 @@ defmodule FinstaWeb.HomeLive do
 
     case Posts.create_comment(comment_params) do
       {:ok, comment} ->
-        post_id = comment.post_id
-        comments = Map.update(socket.assigns.comments, post_id, [comment], fn comments -> [comment | comments] end)
-
         socket =
           socket
-          |> assign(comments: comments)
+          |> stream_insert(:comments, comment)
           |> put_flash(:info, "Comment added successfully!")
 
         {:noreply, socket}

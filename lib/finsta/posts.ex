@@ -39,4 +39,16 @@ defmodule Finsta.Posts do
     |> where([c], c.post_id == ^post_id)
     |> Repo.all()
   end
+
+  # New function to list all comments
+  def list_comments do
+    Repo.all(Comment)
+  end
+
+  # New function to list comments for multiple posts
+  def list_comments_for_posts(post_ids) do
+    Comment
+    |> where([c], c.post_id in ^post_ids)
+    |> Repo.all()
+  end
 end
