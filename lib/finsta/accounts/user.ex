@@ -4,6 +4,7 @@ defmodule Finsta.Accounts.User do
 
   schema "users" do
     field :email, :string
+    field :username, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :naive_datetime
@@ -14,13 +15,21 @@ defmodule Finsta.Accounts.User do
     timestamps()
   end
 
+  @spec changeset(
+          {map(), map()}
+          | %{
+              :__struct__ => atom() | %{:__changeset__ => map(), optional(any()) => any()},
+              optional(atom()) => any()
+            },
+          :invalid | %{optional(:__struct__) => none(), optional(atom() | binary()) => any()}
+        ) :: Ecto.Changeset.t()
   @doc """
   A user changeset for registration.
   """
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:email, :password])
-    |> validate_required([:email, :password])
+    |> cast(attrs, [:email, :password, :username])
+    |> validate_required([:email, :password, :username])
     |> validate_length(:password, min: 6)
     |> put_password_hash()
   end

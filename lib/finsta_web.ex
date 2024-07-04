@@ -27,6 +27,7 @@ defmodule FinstaWeb do
       import Plug.Conn
       import Phoenix.Controller
       import Phoenix.LiveView.Router
+      import FinstaWeb.LiveHelpers
     end
   end
 

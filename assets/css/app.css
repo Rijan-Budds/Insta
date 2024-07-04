@@ -3,3 +3,35 @@
 @import "tailwindcss/utilities";
 
 /* This file is for your main application CSS */
+
+.chat-container {
+    margin: 1rem;
+  }
+  
+  #chat-messages {
+    margin-bottom: 1rem;
+  }
+  
+  .message {
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.5rem;
+  }
+  
+  .username {
+    font-weight: bold;
+  }
+  
+  .timestamp {
+    display: inline-block;
+    margin-left: 0.5rem;
+    color: #666;
+    font-size: 0.9em;
+  }
+  
+  .content {
+    display: block;
+    margin-top: 0.2rem;
+  }
+  
+  

@@ -19,7 +19,6 @@ defmodule FinstaWeb.Router do
 
   scope "/", FinstaWeb do
     pipe_through :browser
-
   end
 
   # Other scopes may use custom stacks.
@@ -29,11 +28,6 @@ defmodule FinstaWeb.Router do
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:finsta, :dev_routes) do
-    # If you want to use the LiveDashboard in production, you should put
-    # it behind authentication and allow only admins to access it.
-    # If your application does not have an admins-only section yet,
-    # you can use Plug.BasicAuth to set up some basic authentication
-    # as long as you are also using SSL (which you should anyway).
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
@@ -65,10 +59,16 @@ defmodule FinstaWeb.Router do
     pipe_through [:browser, :require_authenticated_user]
 
     live_session :require_authenticated_user,
-      on_mount: [{FinstaWeb.UserAuth, :ensure_authenticated}] do
+      on_mount: [
+        {FinstaWeb.UserAuth, :ensure_authenticated},
+        {FinstaWeb.LiveHelpers, :assign_current_user}  # Add this line
+      ] do
       live "/home", HomeLive, :index
       live "/users/settings", UserSettingsLive, :edit
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
+
+      # Chat route
+      live "/chat", ChatLive, :index
     end
   end
 
