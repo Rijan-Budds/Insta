@@ -22,8 +22,8 @@ defmodule FinstaWeb.HomeLive do
       <div :for={{dom_id, post} <- @streams.posts} id={dom_id} class="w-1/2 mx-auto flex flex-col gap-2 p-4 border rounded">
         <div class="text-sm text-gray-500">
           <p><%= Timex.format!(post.inserted_at, "{Mfull} {D}, {YYYY} at {h12}:{m} {AM}") %></p>
-          <p><%= if post.location, do: "at: #{post.location}" %></p>
-          <p><%= if post.tags, do: "with: #{Enum.join(post.tags, ", ")}" %></p>
+          <p><%= if post.location, do: "At: #{post.location}" %></p>
+          <p><%= if post.tags, do: "With: #{Enum.join(post.tags, ", ")}" %></p>
         </div>
         <img src={post.image_path} class="mb-2" />
         <p class="font-bold"><%= post.user.email %></p>
@@ -54,7 +54,7 @@ defmodule FinstaWeb.HomeLive do
         <.input field={@form[:caption]} type="textarea" label="Caption" required />
         <.input field={@form[:location]} type="text" label="Location" />
         <.input field={@form[:tags]} type="text" label="Tags" placeholder="Comma separated tags" />
-        <.button type="submit" phx-disable-with="Saving ...">Create Post</.button>
+        <.button type="submit" phx-disable-with="Posting ...">Create Post</.button>
       </.simple_form>
     </.modal>
     """
@@ -125,15 +125,18 @@ defmodule FinstaWeb.HomeLive do
   end
 
   def handle_event("thumbs_up", %{"id" => id}, socket) do
-    post = Posts.get_post!(id)
-    {:ok, updated_post} = Posts.increment_thumbs_up(post)
+    case Posts.get_post!(id) |> Posts.increment_thumbs_up() do
+      {:ok, updated_post} ->
+        socket =
+          socket
+          |> put_flash(:info, "Post liked!")
+          |> stream_insert(:posts, updated_post)
 
-    socket =
-      socket
-      |> put_flash(:info, "Post liked!")
-      |> stream_insert(:posts, updated_post, at: fn posts -> Enum.find_index(posts, &(&1.id == updated_post.id)) end)
+        {:noreply, socket}
 
-    {:noreply, socket}
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to like post")}
+    end
   end
 
   def handle_event("validate_comment", %{"comment" => comment_params}, socket) do
@@ -180,5 +183,17 @@ defmodule FinstaWeb.HomeLive do
 
       {:postpone, ~p"/uploads/#{Path.basename(dest)}"}
     end)
+  end
+
+  def handle_event("toggle_like", %{"id" => id}, socket) do
+    post = Posts.get_post!(id)
+    user_id = socket.assigns.current_user.id
+
+    case Posts.toggle_like(post, user_id) do
+      {:ok, updated_post} ->
+        {:noreply, stream_insert(socket, :posts, updated_post)}
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update like")}
+    end
   end
 end

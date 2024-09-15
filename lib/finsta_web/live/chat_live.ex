@@ -1,7 +1,6 @@
 defmodule FinstaWeb.ChatLive do
   use FinstaWeb, :live_view
   alias Finsta.Chat
-  alias Finsta.Accounts.User
 
   def mount(_params, %{"user_token" => user_token} = _session, socket) do
     if connected?(socket) do

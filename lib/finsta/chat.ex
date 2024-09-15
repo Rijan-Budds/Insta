@@ -1,5 +1,5 @@
 defmodule Finsta.Chat do
-  import Ecto.Query  # Import the Ecto.Query module to use the `from/2` macro
+  import Ecto.Query
   alias Finsta.Repo
   alias Finsta.Chat.Message
 
@@ -10,7 +10,7 @@ defmodule Finsta.Chat do
   def list_messages do
     Repo.all(
       from m in Message,
-      preload: [:user]  # Preload the user association
+      preload: [:user]
     )
   end
 
