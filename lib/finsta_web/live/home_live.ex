@@ -16,7 +16,7 @@ defmodule FinstaWeb.HomeLive do
   def render(assigns) do
     ~H"""
     <h1 class="text-2xl">Finsta</h1>
-    <.button type="button" phx-click={show_modal("new-post-modal")}>Create Post</.button>
+    <.button type="button" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md transition duration-150 ease-in-out" phx-click={show_modal("new-post-modal")}>Create Post</.button>
 
     <div id="feed" phx-update="stream" class="flex flex-col gap-2">
       <div :for={{dom_id, post} <- @streams.posts} id={dom_id} class="w-1/2 mx-auto flex flex-col gap-2 p-4 border rounded">
@@ -32,18 +32,24 @@ defmodule FinstaWeb.HomeLive do
         <button phx-click="thumbs_up" phx-value-id={post.id}>👍</button>
 
         <!-- Comments Section -->
-        <div>
-          <h2 class="text-xl">Comments</h2>
+        <div class="comment-section bg-gray-900 text-white p-4 rounded">
+          <h2 class="text-xl">Comments: </h2>
+          <br>
           <div id={"comments-#{post.id}"} phx-update="stream">
             <div :for={{comment_dom_id, comment} <- @streams.comments} id={comment_dom_id} class="mb-2">
               <p><%= comment.body %> - <span class="text-sm text-gray-500"><%= Accounts.get_user!(comment.user_id).email %></span></p>
             </div>
           </div>
-          <.simple_form for={@comment_form} phx-change="validate_comment" phx-submit="add-comment">
-            <.input field={@comment_form[:body]} type="text" label="Add a comment" required />
-            <.input field={@comment_form[:post_id]} type="hidden" value={post.id} />
-            <.button type="submit">Comment</.button>
-          </.simple_form>
+                 <.form for={@comment_form} phx-change="validate_comment" phx-submit="add-comment" class="mt-4">
+            <div class="flex flex-col space-y-2">
+              <label for={@comment_form[:body].id} class="text-sm font-medium text-gray-300">Add a comment</label>
+              <input type="text" name={@comment_form[:body].name} id={@comment_form[:body].id} value={@comment_form[:body].value}
+                class="bg-gray-800 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Type your comment here..." />
+              <input type="hidden" name={@comment_form[:post_id].name} value={post.id} />
+               <.button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md transition duration-150 ease-in-out">Comment</.button>
+            </div>
+          </.form>
         </div>
       </div>
     </div>
@@ -183,17 +189,5 @@ defmodule FinstaWeb.HomeLive do
 
       {:postpone, ~p"/uploads/#{Path.basename(dest)}"}
     end)
-  end
-
-  def handle_event("toggle_like", %{"id" => id}, socket) do
-    post = Posts.get_post!(id)
-    user_id = socket.assigns.current_user.id
-
-    case Posts.toggle_like(post, user_id) do
-      {:ok, updated_post} ->
-        {:noreply, stream_insert(socket, :posts, updated_post)}
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to update like")}
-    end
   end
 end
