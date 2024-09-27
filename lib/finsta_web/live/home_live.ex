@@ -28,7 +28,7 @@ defmodule FinstaWeb.HomeLive do
         <img src={post.image_path} class="mb-2" />
         <p class="font-bold"><%= post.user.email %></p>
         <p class="mb-2"><%= post.caption %></p>
-        <p>Thumbs up: <%= post.thumbs_up_count %></p>
+        <p>Likes: <%= post.thumbs_up_count %></p>
         <button phx-click="thumbs_up" phx-value-id={post.id}>👍</button>
 
         <!-- Comments Section -->

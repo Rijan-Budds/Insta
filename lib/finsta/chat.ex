@@ -8,10 +8,7 @@ defmodule Finsta.Chat do
   end
 
   def list_messages do
-    Repo.all(
-      from m in Message,
-      preload: [:user]
-    )
+    Repo.all(from m in Message, preload: [:user])
   end
 
   def create_message(user, attrs) do
@@ -20,7 +17,14 @@ defmodule Finsta.Chat do
     %Message{}
     |> Message.changeset(attrs_with_user_id)
     |> Repo.insert()
-    |> broadcast(:new_message)
+    |> case do
+      {:ok, message} ->
+        message_with_user = Repo.preload(message, :user)
+        broadcast({:ok, message_with_user}, :new_message)
+        {:ok, message_with_user}
+      {:error, _} = error ->
+        error
+    end
   end
 
   defp broadcast({:ok, message}, event) do
@@ -28,5 +32,6 @@ defmodule Finsta.Chat do
     {:ok, message}
   end
 
+  defp broadcast(:ok, _event), do: :ok
   defp broadcast({:error, _reason} = error, _event), do: error
 end
